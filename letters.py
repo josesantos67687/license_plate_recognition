@@ -20,6 +20,6 @@ for letter in alphabet:
         for l in range(200):
             conta+=binaryimage[l,c][2] == 255
         histH.append(conta)
-    f = open('letters/letter' + letter + '.txt', "a")
+    f = open('histLetters/letter' + letter + '.txt', "a")
     f.write(str(histH))
 

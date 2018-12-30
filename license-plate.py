@@ -8,7 +8,7 @@ import os
 
 from matplotlib import pyplot as plt
 
-image = imutils.resize(cv2.imread('mini.jpg'), width=500)
+image = imutils.resize(cv2.imread('LicensePlates/mini.jpg'), width=500)
 
 #cv2.imshow("Imagem-Original", image)
 #cv2.moveWindow('Imagem-Original',0,0)
@@ -87,24 +87,27 @@ for c in range(width):
         conta+=closing[l,c] == 255
     histH.append(conta)
 
-print histH
 
+letters = []
 min=0
 max=0
 for a in histH:
     if a==0 and max>min:
-        break
-    elif a>0:
+        letters.append(closing[0:height, min:max])
+        min = max
+    if a>0:
         max+=1
     elif a==0:
         min+=1
         max+=1
 
 
-print min
-print max
-histmat = closing[0:height, min:max]
-cv2.imshow("histmat", histmat)
+
+#print letters
+#print min
+#print max
+#histmat = closing[0:height, min:max]
+cv2.imshow("histmat", letters[1])
 
 
 

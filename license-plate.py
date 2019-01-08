@@ -113,8 +113,9 @@ for a in histH:
 
 perimeterletter = []
 for letter in letters :
+    resized_image = cv2.resize(letter, (100, 50))
     #calculating perimeter
-    edged = cv2.Canny(letter, 0,10)
+    edged = cv2.Canny(resized_image, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
@@ -128,7 +129,22 @@ for letter in letters :
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
         perimeter = perimeter+cv2.arcLength(c,True)
         perimeterletter.append(perimeter)
-        print(perimeter)
+
+
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+for i in range(letters) :
+    for l in alphabet :
+        p = open('histLetters/perimeter' + l + '.txt', "r")
+        histletter = p.read()
+        print float(histletter)/perimeterletter[i]
+
+        w = open('histLetters/nwhites' + l + '.txt', "r")
+        whites = w.read()
+        print float(whites)/npwhites[i]
+
+        h = open('histLetters/nwhites' + l + '.txt', "r")
+        hist = h.read() #still needs to transform to array
+        print len(set(hist)&set(hist[i])) / float(len(set(hist) | set(hist[i]))) * 100 #currently will not work
 
 
 

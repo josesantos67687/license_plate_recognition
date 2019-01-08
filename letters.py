@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 for letter in alphabet:
-    letterimage = imutils.resize(cv2.imread('letters/letter' + letter + '.png'), width=200, height=200)
+    letterimage = imutils.resize(cv2.imread('letters/letter' + letter + '.jpg'), width=200, height=200)
     ret,binaryimage = cv2.threshold(letterimage,50,255,cv2.THRESH_BINARY_INV)
     #cv2.imshow("Letter", letterimage)
     histH=[]
@@ -42,4 +42,3 @@ for letter in alphabet:
         p = open('histLetters/perimeter' + letter + '.txt', "a")
         p.write(str(perimeter))
 
-cv2.waitKey(0)

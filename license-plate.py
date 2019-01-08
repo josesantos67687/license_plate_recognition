@@ -88,14 +88,14 @@ for c in range(width):
     histH.append(conta)
 
 
-letters = []
+chars = []
 npwhites = []
 countwhites=0
 min=0
 max=0
 for a in histH:
     if a==0 and max>min:
-        letters.append(closing[0:height, min:max])
+        chars.append(closing[0:height, min:max])
         npwhites.append(countwhites)
         countwhites=0
         min = max
@@ -106,14 +106,15 @@ for a in histH:
         min+=1
         max+=1
 
-#print letters
+#print chars
 #print min
 #print max
 #histmat = closing[0:height, min:max]
+cv2.imshow("char", chars[1])
 
-perimeterletter = []
-for letter in letters :
-    resized_image = cv2.resize(letter, (100, 50))
+perimeterchar = []
+for char in chars :
+    resized_image = cv2.resize(char, (100, 50))
     #calculating perimeter
     edged = cv2.Canny(resized_image, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
@@ -128,24 +129,30 @@ for letter in letters :
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
         perimeter = perimeter+cv2.arcLength(c,True)
-        perimeterletter.append(perimeter)
+        perimeterchar.append(perimeter)
 
 
-alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-for i in range(letters) :
-    for l in alphabet :
-        p = open('histLetters/perimeter' + l + '.txt', "r")
-        histletter = p.read()
-        print float(histletter)/perimeterletter[i]
+characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+predictedchars=[]
+for index, char in enumerate(chars) :
+    predichar=('', 0)
+    for c in characters :
+        p = open('histcharacters/perimeter' + c + '.txt', "r")
+        perimeter = p.read()
+        print float(perimeter)/perimeterchar[index]
 
-        w = open('histLetters/nwhites' + l + '.txt', "r")
+        w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
-        print float(whites)/npwhites[i]
+        print float(whites)/npwhites[index]
 
-        h = open('histLetters/nwhites' + l + '.txt', "r")
-        hist = h.read() #still needs to transform to array
-        print len(set(hist)&set(hist[i])) / float(len(set(hist) | set(hist[i]))) * 100 #currently will not work
+        h = open('histcharacters/char' + c + '.txt', "r")
+        hist = h.read().split(",");
+        floathist = [int(i) for i in hist[:-1]]
+#print len(set(hist)&set(hist[char])) / float(len(set(hist) | set(hist[char]))) * 100
 
+
+regex_pt = "([A-B]{2}[A-B]{2}[0-9]{2})|([0-9]{2}[A-B]{2}[A-B]{2})|([A-B]{2}[0-9]{2}[A-B]{2})|"
+regex_en = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
 
 
 cv2.waitKey(0)

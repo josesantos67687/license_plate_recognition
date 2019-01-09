@@ -111,15 +111,17 @@ for a in histH:
 #print min
 #print max
 #histmat = closing[0:height, min:max]
-cv2.imshow("char", chars[1])
-resized_image = cv2.resize(chars[1], (200, 400))
-cv2.imwrite( "./Gray_Image.jpg", resized_image );
+resized_image = cv2.resize(chars[7], (200, 400))
+
 
 perimeterchar = []
 for char in chars :
     resized_image = cv2.resize(char, (200, 400))
     #calculating perimeter
-    edged = cv2.Canny(resized_image, 0,10)
+    ret,binaryimage = cv2.threshold(resized_image,50,255,cv2.THRESH_BINARY_INV)
+    edged = cv2.Canny(binaryimage, 0,10)
+    cv2.imshow("lala", binaryimage)
+    cv2.imwrite( "./Gray_Image.jpg", binaryimage );
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
@@ -145,8 +147,12 @@ for index, char in enumerate(chars) :
     for c in characters :
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()
-        perimeterpercentage = float(perimeter)/perimeterchar[index]
-        if predictedvalue<perimeterpercentage :
+        if (float(perimeter)/perimeterchar[index]) <= 1 :
+            perimeterpercentage = float(perimeter)/perimeterchar[index]
+        else :
+            perimeterpercentage = perimeterchar[index]/float(perimeter)
+        print perimeterpercentage
+        if predictedvalue<perimeterpercentage and perimeterpercentage<1 :
             predictedchar=c
             predictedvalue=perimeterpercentage
         

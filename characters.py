@@ -8,11 +8,11 @@ import os
 
 from matplotlib import pyplot as plt
 
-characters = "ABCDEFGHIJLMNOPQRSTUVXZ0123456789"
+characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 #characters = "3RLTE"
 for char in characters:
     charimage = imutils.resize(cv2.imread('characters/' + char + '.jpg'), width=200)
-    ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY_INV)
+    ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY)
     f = open('histcharacters/char' + char + '.txt', "a")
     cwhites=0
     height, width = binaryimage.shape[:2]

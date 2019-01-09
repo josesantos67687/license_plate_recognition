@@ -132,11 +132,11 @@ for char in chars :
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
         perimeter = perimeter+cv2.arcLength(c,True)
-        perimeterchar.append(perimeter)
+    perimeterchar.append(perimeter)
 
 
-characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-#characters = "3RLTE"
+#characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+characters = "3RLTE"
 predictedchars=[]
 predictedvalues=[]
 for index, char in enumerate(chars) :
@@ -167,12 +167,15 @@ license = ''.join(predictedchars)
 print license
 
 regex_pt = "([A-B]{2}[A-B]{2}[0-9]{2})|([0-9]{2}[A-B]{2}[A-B]{2})|([A-B]{2}[0-9]{2}[A-B]{2})"
-regex_en = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
+regex_gb = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
 
 if re.match(regex_pt, license) :
-    print license
+    print "PT license: " + license
+elif re.match(regex_gb, license) :
+    print "GB license: " + license
 else :
     print "No license found"
+
 
 cv2.waitKey(0)
 

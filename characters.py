@@ -8,10 +8,10 @@ import os
 
 from matplotlib import pyplot as plt
 
-characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+characters = "ABCDEFGHIJLMNOPQRSTUVXZ0123456789"
 #characters = "3RLTE"
 for char in characters:
-    charimage = imutils.resize(cv2.imread('characters/' + char + '.jpg'), width=500)
+    charimage = imutils.resize(cv2.imread('characters/' + char + '.jpg'), width=200)
     ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY_INV)
     f = open('histcharacters/char' + char + '.txt', "a")
     cwhites=0
@@ -36,7 +36,9 @@ for char in characters:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
-        perimeter = perimeter+cv2.arcLength(c,True)
-        p = open('histcharacters/perimeter' + char + '.txt', "a")
-        p.write(str(perimeter))
+        perimeter = round(perimeter+cv2.arcLength(c,True),2)
+        print perimeter
+    p = open('histcharacters/perimeter' + char + '.txt', "a")
+    p.write(str(perimeter))
+    p.close()
 

@@ -12,7 +12,7 @@ characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 #characters = "3RLTE"
 for char in characters:
     charimage = imutils.resize(cv2.imread('characters/' + char + '.jpg'), width=200)
-    ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY)
+    ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY_INV)
     f = open('histcharacters/char' + char + '.txt', "a")
     cwhites=0
     height, width = binaryimage.shape[:2]

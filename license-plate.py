@@ -9,7 +9,7 @@ import os
 
 from matplotlib import pyplot as plt
 
-image = imutils.resize(cv2.imread('LicensePlates/mini.jpg'), width=500)
+image = imutils.resize(cv2.imread('LicensePlates/plate.png'), width=500)
 
 #cv2.imshow("Imagem-Original", image)
 #cv2.moveWindow('Imagem-Original',0,0)
@@ -40,7 +40,7 @@ ret=sorted(ret, key = cv2.contourArea, reverse = True)[:30]
 posMatricula = None
 
 for i in ret:
-    epsilon = 0.02*cv2.arcLength(i,True)
+    epsilon = 0.03*cv2.arcLength(i,True)
     approx = cv2.approxPolyDP(i, epsilon, True)
     if len(approx) == 4:
         posMatricula = approx
@@ -71,10 +71,10 @@ mat = image[ymin:ymax, xmin:xmax]
 
 matGrayScale = cv2.cvtColor(mat, cv2.COLOR_BGR2GRAY)
 
-ret,binarymat = cv2.threshold(matGrayScale,50,255,cv2.THRESH_BINARY_INV)
+ret,binarymat = cv2.threshold(matGrayScale,80,255,cv2.THRESH_BINARY_INV)
 cv2.imshow("binary", binarymat)
 
-kernel = np.ones((3,3),np.uint8)
+kernel = np.ones((1,1),np.uint8)
 closing = cv2.morphologyEx(binarymat, cv2.MORPH_CLOSE, kernel)
 cv2.imshow("closing", closing)
 
@@ -95,15 +95,15 @@ countwhites=0
 min=0
 max=0
 for a in histH:
-    if a==0 and max>min:
+    if a<10 and max>min:
         chars.append(closing[0:height, min:max])
         npwhites.append(countwhites)
         countwhites=0
         min = max
-    if a>0:
+    if a>10:
         max+=1
         countwhites+=a
-    elif a==0:
+    elif a<10:
         min+=1
         max+=1
 
@@ -111,17 +111,14 @@ for a in histH:
 #print min
 #print max
 #histmat = closing[0:height, min:max]
-resized_image = cv2.resize(chars[7], (200, 400))
-
+cv2.imshow("", cv2.resize(chars[1], (200, 400)))
 
 perimeterchar = []
 for char in chars :
     resized_image = cv2.resize(char, (200, 400))
     #calculating perimeter
-    ret,binaryimage = cv2.threshold(resized_image,50,255,cv2.THRESH_BINARY_INV)
-    edged = cv2.Canny(binaryimage, 0,10)
-    cv2.imshow("lala", binaryimage)
-    cv2.imwrite( "./Gray_Image.jpg", binaryimage );
+    #ret,binaryimage = cv2.threshold(resized_image,50,255,cv2.THRESH_BINARY_INV)
+    edged = cv2.Canny(resized_image, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
@@ -133,12 +130,12 @@ for char in chars :
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
-        perimeter = perimeter+cv2.arcLength(c,True)
+        perimeter = round(perimeter+cv2.arcLength(c,True),2)
     perimeterchar.append(perimeter)
 
 
-#characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-characters = "3RLTE"
+characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+#characters = "3RLTE"
 predictedchars=[]
 predictedvalues=[]
 for index, char in enumerate(chars) :
@@ -164,8 +161,9 @@ for index, char in enumerate(chars) :
         hist = h.read().split(",");
         floathist = [int(i) for i in hist[:-1]]
         #print len(set(hist)&set(hist[char])) / float(len(set(hist) | set(hist[char]))) * 100
-    predictedchars.append(predictedchar)
-    predictedvalues.append(predictedvalue)
+    if(predictedvalue>0.95) :
+        predictedchars.append(predictedchar)
+        predictedvalues.append(predictedvalue)
 
 #print predictedvalues
 

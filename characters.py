@@ -9,6 +9,7 @@ import os
 from matplotlib import pyplot as plt
 
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+#characters = "3RLTE"
 for char in characters:
     charimage = imutils.resize(cv2.imread('characters/' + char + '.jpg'), width=500)
     ret,binaryimage = cv2.threshold(charimage,50,255,cv2.THRESH_BINARY_INV)

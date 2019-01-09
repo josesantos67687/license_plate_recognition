@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import imutils
+import re
 
 import pytesseract
 import argparse
@@ -111,10 +112,12 @@ for a in histH:
 #print max
 #histmat = closing[0:height, min:max]
 cv2.imshow("char", chars[1])
+resized_image = cv2.resize(chars[1], (200, 400))
+cv2.imwrite( "./Gray_Image.jpg", resized_image );
 
 perimeterchar = []
 for char in chars :
-    resized_image = cv2.resize(char, (100, 50))
+    resized_image = cv2.resize(char, (200, 400))
     #calculating perimeter
     edged = cv2.Canny(resized_image, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
@@ -133,27 +136,43 @@ for char in chars :
 
 
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+#characters = "3RLTE"
 predictedchars=[]
+predictedvalues=[]
 for index, char in enumerate(chars) :
-    predichar=('', 0)
+    predictedchar=''
+    predictedvalue=0
     for c in characters :
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()
-        print float(perimeter)/perimeterchar[index]
-
+        perimeterpercentage = float(perimeter)/perimeterchar[index]
+        if predictedvalue<perimeterpercentage :
+            predictedchar=c
+            predictedvalue=perimeterpercentage
+        
         w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
-        print float(whites)/npwhites[index]
+        #print int(whites)/npwhites[index]
 
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
         floathist = [int(i) for i in hist[:-1]]
-#print len(set(hist)&set(hist[char])) / float(len(set(hist) | set(hist[char]))) * 100
+        #print len(set(hist)&set(hist[char])) / float(len(set(hist) | set(hist[char]))) * 100
+    predictedchars.append(predictedchar)
+    predictedvalues.append(predictedvalue)
 
+#print predictedvalues
 
-regex_pt = "([A-B]{2}[A-B]{2}[0-9]{2})|([0-9]{2}[A-B]{2}[A-B]{2})|([A-B]{2}[0-9]{2}[A-B]{2})|"
+license = ''.join(predictedchars)
+print license
+
+regex_pt = "([A-B]{2}[A-B]{2}[0-9]{2})|([0-9]{2}[A-B]{2}[A-B]{2})|([A-B]{2}[0-9]{2}[A-B]{2})"
 regex_en = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
 
+if re.match(regex_pt, license) :
+    print license
+else :
+    print "No license found"
 
 cv2.waitKey(0)
 

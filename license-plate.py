@@ -8,18 +8,31 @@ import argparse
 import os
 
 from matplotlib import pyplot as plt
-#get license image
+
 image = imutils.resize(cv2.imread('LicensePlates/mini.jpg'), width=500)
 
-#gray scale image
+#cv2.imshow("Imagem-Original", image)
+#cv2.moveWindow('Imagem-Original',0,0)
+
+
 imageGrayScale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-#apply bilateral filter
+#cv2.imshow("Imagem-GrayScale", imageGrayScale)
+#cv2.moveWindow('Imagem-GrayScale',0,400)
+
+
 imageNoise = cv2.bilateralFilter(imageGrayScale, 9, 75, 75)
+
+#cv2.imshow("Imagem Sem Ruido", imageNoise)
+#cv2.moveWindow('Imagem Sem Ruido',500,0)
+
 
 imageEdged = cv2.Canny(imageNoise, 100, 200)
 
-#find rectangels
+#cv2.imshow("Imagem Contornos", imageEdged)
+#cv2.moveWindow('Imagem Contornos',500,400)
+
+#Encontrar retangulos
 (new, ret, principal) = cv2.findContours(imageEdged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
 ret=sorted(ret, key = cv2.contourArea, reverse = True)[:30]
@@ -27,7 +40,7 @@ ret=sorted(ret, key = cv2.contourArea, reverse = True)[:30]
 posMatricula = None
 
 for i in ret:
-    epsilon = 0.03*cv2.arcLength(i,True)
+    epsilon = 0.02*cv2.arcLength(i,True)
     approx = cv2.approxPolyDP(i, epsilon, True)
     if len(approx) == 4:
         posMatricula = approx
@@ -36,15 +49,14 @@ for i in ret:
 
 # Drawing the selected contour on the original image
 cv2.drawContours(image, [posMatricula], -1, (255,255,255), 2)
-print posMatricula
 cv2.imshow("Imagem com matricula", image)
 
 
-#calculate license dimension
 xmin = None
 xmax = None
 ymin = None
 ymax = None
+
 
 for [[x,y]] in posMatricula:
     if xmin > x or xmin == None:
@@ -58,17 +70,12 @@ mat = image[ymin:ymax, xmin:xmax]
 
 matGrayScale = cv2.cvtColor(mat, cv2.COLOR_BGR2GRAY)
 
-#inserve binary thresh
-ret,binarymat = cv2.threshold(matGrayScale,80,255,cv2.THRESH_BINARY_INV)
+ret,binarymat = cv2.threshold(matGrayScale,50,255,cv2.THRESH_BINARY_INV)
 cv2.imshow("binary", binarymat)
 
-
-
-#closing
 kernel = np.ones((3,3),np.uint8)
 closing = cv2.morphologyEx(binarymat, cv2.MORPH_CLOSE, kernel)
 cv2.imshow("closing", closing)
-
 
 height, width = closing.shape[:2]
 print height
@@ -81,124 +88,117 @@ for c in range(width):
     histH.append(conta)
 
 
-#get chars and whites
+
 chars = []
 min=0
 max=0
 for a in histH:
-    if a<4 and max>min:
-        resized = cv2.resize(closing[0:height, min:max], (200, 400))
-        chars.append(resized)
+    if a==0 and max>min:
+        chars.append(closing[0:height, min:max])
         min = max
-    if a>4:
+    if a>0:
         max+=1
-    elif a<4:
+    elif a==0:
         min+=1
         max+=1
 
-# #skeleton
-skelchars = []
-for normaletter in chars:
-    size = np.size(normaletter)
-    skel = np.zeros(normaletter.shape,np.uint8)
+
+charHs = []
+charH = []
+charW = []
+charP = []
+imgSkel = []
+
+for char in chars:
+    resized = cv2.resize(char, (200, 400))
+    size = np.size(resized)
+    skel = np.zeros(resized.shape,np.uint8)
 
     element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
     done = False
-
-    while( not done):
-        eroded = cv2.erode(normaletter,element)
-        temp = cv2.dilate(eroded,element)
-        temp = cv2.subtract(normaletter,temp)
-        skel = cv2.bitwise_or(skel,temp)
-        normaletter = eroded.copy()
      
-        zeros = size - cv2.countNonZero(normaletter)
+    while( not done):
+        eroded = cv2.erode(resized,element)
+        temp = cv2.dilate(eroded,element)
+        temp = cv2.subtract(resized,temp)
+        skel = cv2.bitwise_or(skel,temp)
+        resized = eroded.copy()
+     
+        zeros = size - cv2.countNonZero(resized)
         if zeros==size:
             done = True
-    skelchars.append(skel)
-
-
-#calculating hist of skelchars
-charhist = []
-charshist=[]
-npwhites = []
-for char in skelchars :
+    
+    _, letraMat = cv2.threshold(skel, 10, 255, cv2.THRESH_BINARY)
+    imgSkel.append(letraMat)
+    
     for c in range(200):
         conta=0
         for l in range(400):
-            conta+=char[l,c] == 255
-        charhist.append(conta)
-    charshist.append(charhist)
-    charhist = []
-    npwhites.append(cv2.countNonZero(char))
+            conta+=letraMat[l,c] == 255
+        charHs.append(conta)
+    charH.append(charHs)
+    charHs = []
 
+    charW.append(cv2.countNonZero(letraMat))
 
-#claculate perimeter of skelchars
-perimeterchar = []
-for char in skelchars :
     #calculating perimeter
-    #ret,binaryimage = cv2.threshold(resized_image,50,255,cv2.THRESH_BINARY_INV)
-    edged = cv2.Canny(char, 0,10)
+    edged = cv2.Canny(letraMat, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
     image, contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
     perimeter=0
-
     for c in contours:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
         perimeter = round(perimeter+cv2.arcLength(c,True),2)
-    perimeterchar.append(perimeter)
-    print perimeterchar
-
-cv2.imshow("qualquer", chars[3])
-
-cv2.waitKey(0)
+    charP.append(perimeter)
 
 
-#calculations to find license
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 predictedchars=[]
-predictedvalues=[]
-for index, char in enumerate(skelchars) :
+
+for index, i in enumerate(imgSkel):
     predictedchar=''
     predictedvalue=0
-    for c in characters :
+    cv2.imshow("Letra Matricula", imgSkel[index])
+    cv2.waitKey(0)
+    for c in characters:
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()
-        if (float(perimeter)/perimeterchar[index]) <= 1 :
-            perimeterpercentage = float(perimeter)/perimeterchar[index]
+        if (float(perimeter)/charP[index]) <= 1 :
+            perimeterpercentage = float(perimeter)/charP[index]
         else :
-            perimeterpercentage = perimeterchar[index]/float(perimeter)
-        
+            perimeterpercentage = charP[index]/float(perimeter)
+
+
         w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
-        #print int(whites)/npwhites[index]
-        whites_percentage = 0
-        if int (whites)/int (npwhites[index]) <= 1 :
-            whites_percentage = int (whites)/npwhites[index]
+        if int (whites)/charW[index] <= 1 :
+            whites_percentage = int (whites)/charW[index]
         else :
-            whites_percentage = npwhites[index]/int (whites)
+            whites_percentage = charW[index]/int (whites)
 
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
         inthist = [int(i) for i in hist[:-1]]
-        histvalue = len(set(inthist)&set(charshist[index])) / float(len(set(inthist) | set(charshist[index])))
+        histvalue = len(set(inthist)&set(charH[index])) / float(len(set(inthist) | set(charH[index])))
 
         currentvalue = histvalue + perimeterpercentage + whites_percentage
         if predictedvalue<currentvalue/3 :
             predictedchar=c
             predictedvalue= currentvalue/3
 
+
     if(predictedvalue>0.3) :
         predictedchars.append(predictedchar)
-        predictedvalues.append(predictedvalue)
 
 
 
+p.close()
+w.close()
+h.close()
 #license regex
 license = ''.join(predictedchars)
 print license
@@ -215,7 +215,3 @@ else :
 
 
 cv2.waitKey(0)
-
-
-
-

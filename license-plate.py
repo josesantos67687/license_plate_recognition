@@ -11,28 +11,15 @@ from matplotlib import pyplot as plt
 
 image = imutils.resize(cv2.imread('LicensePlates/mini.jpg'), width=500)
 
-#cv2.imshow("Imagem-Original", image)
-#cv2.moveWindow('Imagem-Original',0,0)
-
-
 imageGrayScale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-#cv2.imshow("Imagem-GrayScale", imageGrayScale)
-#cv2.moveWindow('Imagem-GrayScale',0,400)
-
-
+#noise-reducing algorithm
 imageNoise = cv2.bilateralFilter(imageGrayScale, 9, 75, 75)
 
-#cv2.imshow("Imagem Sem Ruido", imageNoise)
-#cv2.moveWindow('Imagem Sem Ruido',500,0)
-
-
+#edge detection algorithm
 imageEdged = cv2.Canny(imageNoise, 100, 200)
 
-#cv2.imshow("Imagem Contornos", imageEdged)
-#cv2.moveWindow('Imagem Contornos',500,400)
-
-#Encontrar retangulos
+#find rect
 (new, ret, principal) = cv2.findContours(imageEdged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
 ret=sorted(ret, key = cv2.contourArea, reverse = True)[:30]
@@ -49,14 +36,14 @@ for i in ret:
 
 # Drawing the selected contour on the original image
 cv2.drawContours(image, [posMatricula], -1, (255,255,255), 2)
-cv2.imshow("Imagem com matricula", image)
+cv2.imshow("License Plate drawn", image)
 
 
+# getting license plate from drawn countours
 xmin = None
 xmax = None
 ymin = None
 ymax = None
-
 
 for [[x,y]] in posMatricula:
     if xmin > x or xmin == None:
@@ -67,16 +54,20 @@ for [[x,y]] in posMatricula:
     elif ymax < y: ymax = y
 
 mat = image[ymin:ymax, xmin:xmax]
+cv2.imshow("License Plate Contours", mat)
 
 matGrayScale = cv2.cvtColor(mat, cv2.COLOR_BGR2GRAY)
 
+#Apply inverse binary threshold
 ret,binarymat = cv2.threshold(matGrayScale,50,255,cv2.THRESH_BINARY_INV)
 cv2.imshow("binary", binarymat)
 
+#Apply closing morphology expression
 kernel = np.ones((3,3),np.uint8)
 closing = cv2.morphologyEx(binarymat, cv2.MORPH_CLOSE, kernel)
 cv2.imshow("closing", closing)
 
+# calculate histogram of whole image
 height, width = closing.shape[:2]
 print height
 print width
@@ -88,7 +79,7 @@ for c in range(width):
     histH.append(conta)
 
 
-
+#calculate characters by analysing the hist above
 chars = []
 min=0
 max=0
@@ -103,6 +94,7 @@ for a in histH:
         max+=1
 
 
+# calculate skel chars, number of whites and perimeter
 charHs = []
 charH = []
 charW = []
@@ -130,8 +122,6 @@ for char in chars:
     
     _, letraMat = cv2.threshold(skel, 10, 255, cv2.THRESH_BINARY)
     imgSkel.append(letraMat)
-    cv2.imshow("Letra Matricula", letraMat)
-    cv2.waitKey(0)
     
     for c in range(200):
         conta=0
@@ -158,14 +148,15 @@ for char in chars:
     charP.append(perimeter)
 
 
+#compare chars with generated characters
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 predictedchars=[]
 
 for index, i in enumerate(imgSkel):
     predictedchar=''
     predictedvalue=0
-    #cv2.imshow("Letra Matricula", imgSkel[index])
-    #cv2.waitKey(0)
+    cv2.imshow("License Plate Letter", imgSkel[index])
+    cv2.waitKey(0)
     for c in characters:
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()

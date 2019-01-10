@@ -69,8 +69,6 @@ cv2.imshow("closing", closing)
 
 # calculate histogram of whole image
 height, width = closing.shape[:2]
-print height
-print width
 histH=[]
 for c in range(width):
     conta=0
@@ -155,6 +153,7 @@ predictedchars=[]
 for index, i in enumerate(imgSkel):
     predictedchar=''
     predictedvalue=0
+    print "Clique na janela \'License Plate Letter\' e pressione \'ENTER\' para ver a proxima letra encontrada."
     cv2.imshow("License Plate Letter", imgSkel[index])
     cv2.waitKey(0)
     for c in characters:
@@ -197,7 +196,7 @@ w.close()
 h.close()
 #license regex
 license = ''.join(predictedchars)
-print license
+print "Matricula lida: " + license
 
 regex_pt = "([A-Z]{2}[A-Z]{2}[0-9]{2})|([0-9]{2}[A-Z]{2}[A-Z]{2})|([A-Z]{2}[0-9]{2}[A-Z]{2})"
 regex_gb = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
@@ -207,8 +206,8 @@ if re.match(regex_pt, license) :
 elif re.match(regex_gb, license) :
     print "GB license: " + license
 else :
-    print "No license found"
-
+    print "Pais de origem da matricula nao encontrado"
+print "Pressione \'ENTER\' para terminar a execucao."
 
 cv2.waitKey(0)
 

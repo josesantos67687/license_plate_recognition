@@ -130,6 +130,8 @@ for char in chars:
     
     _, letraMat = cv2.threshold(skel, 10, 255, cv2.THRESH_BINARY)
     imgSkel.append(letraMat)
+    cv2.imshow("Letra Matricula", letraMat)
+    cv2.waitKey(0)
     
     for c in range(200):
         conta=0
@@ -162,8 +164,8 @@ predictedchars=[]
 for index, i in enumerate(imgSkel):
     predictedchar=''
     predictedvalue=0
-    cv2.imshow("Letra Matricula", imgSkel[index])
-    cv2.waitKey(0)
+    #cv2.imshow("Letra Matricula", imgSkel[index])
+    #cv2.waitKey(0)
     for c in characters:
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()
@@ -183,7 +185,10 @@ for index, i in enumerate(imgSkel):
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
         inthist = [int(i) for i in hist[:-1]]
-        histvalue = len(set(inthist)&set(charH[index])) / float(len(set(inthist) | set(charH[index])))
+        if len(set(inthist)&set(charH[index])) / float(len(set(inthist) | set(charH[index]))) <= 1 :
+            histvalue = len(set(inthist)&set(charH[index])) / float(len(set(inthist) | set(charH[index])))
+        else :
+            histvalue = float(len(set(inthist) | set(charH[index]))) / len(set(inthist)&set(charH[index]))
 
         currentvalue = histvalue + perimeterpercentage + whites_percentage
         if predictedvalue<currentvalue/3 :
@@ -191,7 +196,7 @@ for index, i in enumerate(imgSkel):
             predictedvalue= currentvalue/3
 
 
-    if(predictedvalue>0.3) :
+    if(predictedvalue>0.5) :
         predictedchars.append(predictedchar)
 
 
@@ -215,3 +220,4 @@ else :
 
 
 cv2.waitKey(0)
+

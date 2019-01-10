@@ -199,7 +199,7 @@ h.close()
 license = ''.join(predictedchars)
 print license
 
-regex_pt = "([A-B]{2}[A-B]{2}[0-9]{2})|([0-9]{2}[A-B]{2}[A-B]{2})|([A-B]{2}[0-9]{2}[A-B]{2})"
+regex_pt = "([A-Z]{2}[A-Z]{2}[0-9]{2})|([0-9]{2}[A-Z]{2}[A-Z]{2})|([A-Z]{2}[0-9]{2}[A-Z]{2})"
 regex_gb = "[A-Z]{2}[0-9]{2}[A-Z]{3}"
 
 if re.match(regex_pt, license) :

@@ -8,31 +8,18 @@ import argparse
 import os
 
 from matplotlib import pyplot as plt
+#get license image
+image = imutils.resize(cv2.imread('LicensePlates/mini.jpg'), width=500)
 
-image = imutils.resize(cv2.imread('LicensePlates/plate.png'), width=500)
-
-#cv2.imshow("Imagem-Original", image)
-#cv2.moveWindow('Imagem-Original',0,0)
-
-
+#gray scale image
 imageGrayScale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-#cv2.imshow("Imagem-GrayScale", imageGrayScale)
-#cv2.moveWindow('Imagem-GrayScale',0,400)
-
-
+#apply bilateral filter
 imageNoise = cv2.bilateralFilter(imageGrayScale, 9, 75, 75)
-
-#cv2.imshow("Imagem Sem Ruido", imageNoise)
-#cv2.moveWindow('Imagem Sem Ruido',500,0)
-
 
 imageEdged = cv2.Canny(imageNoise, 100, 200)
 
-#cv2.imshow("Imagem Contornos", imageEdged)
-#cv2.moveWindow('Imagem Contornos',500,400)
-
-#Encontrar retangulos
+#find rectangels
 (new, ret, principal) = cv2.findContours(imageEdged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
 ret=sorted(ret, key = cv2.contourArea, reverse = True)[:30]
@@ -53,11 +40,11 @@ print posMatricula
 cv2.imshow("Imagem com matricula", image)
 
 
+#calculate license dimension
 xmin = None
 xmax = None
 ymin = None
 ymax = None
-
 
 for [[x,y]] in posMatricula:
     if xmin > x or xmin == None:
@@ -71,10 +58,14 @@ mat = image[ymin:ymax, xmin:xmax]
 
 matGrayScale = cv2.cvtColor(mat, cv2.COLOR_BGR2GRAY)
 
+#inserve binary thresh
 ret,binarymat = cv2.threshold(matGrayScale,80,255,cv2.THRESH_BINARY_INV)
 cv2.imshow("binary", binarymat)
 
-kernel = np.ones((1,1),np.uint8)
+
+
+#closing
+kernel = np.ones((3,3),np.uint8)
 closing = cv2.morphologyEx(binarymat, cv2.MORPH_CLOSE, kernel)
 cv2.imshow("closing", closing)
 
@@ -89,30 +80,61 @@ for c in range(width):
     histH.append(conta)
 
 
+#get chars and whites
 chars = []
 npwhites = []
 countwhites=0
 min=0
 max=0
 for a in histH:
-    if a<10 and max>min:
-        chars.append(closing[0:height, min:max])
+    if a<4 and max>min:
+        resized = cv2.resize(closing[0:height, min:max], (200, 400))
+        chars.append(resized)
         npwhites.append(countwhites)
         countwhites=0
         min = max
-    if a>10:
+    if a>4:
         max+=1
         countwhites+=a
-    elif a<10:
+    elif a<4:
         min+=1
         max+=1
 
-#print chars
-#print min
-#print max
-#histmat = closing[0:height, min:max]
-cv2.imshow("", cv2.resize(chars[1], (200, 400)))
 
+#calculating skel of chars
+for char in chars :
+    size = np.size(binarymat)
+    skel = np.zeros(binarymat.shape,np.uint8)
+
+    element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
+    done = False
+
+    while( not done):
+        eroded = cv2.erode(binarymat,element)
+        temp = cv2.dilate(eroded,element)
+        temp = cv2.subtract(binarymat,temp)
+        skel = cv2.bitwise_or(skel,temp)
+        binarymat = eroded.copy()
+        
+        zeros = size - cv2.countNonZero(binarymat)
+        if zeros==size:
+            done = True
+
+
+#calculating hist of chars
+charhist = []
+charshist=[]
+for char in chars :
+    for c in range(200):
+        conta=0
+        for l in range(400):
+            conta+=char[l,c] == 255
+        charhist.append(conta)
+    charshist.append(charhist)
+    charhist = []
+
+
+#claculate perimeter of chars
 perimeterchar = []
 for char in chars :
     resized_image = cv2.resize(char, (200, 400))
@@ -134,8 +156,8 @@ for char in chars :
     perimeterchar.append(perimeter)
 
 
+#calculations to find license
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-#characters = "3RLTE"
 predictedchars=[]
 predictedvalues=[]
 for index, char in enumerate(chars) :
@@ -148,10 +170,6 @@ for index, char in enumerate(chars) :
             perimeterpercentage = float(perimeter)/perimeterchar[index]
         else :
             perimeterpercentage = perimeterchar[index]/float(perimeter)
-        print perimeterpercentage
-        if predictedvalue<perimeterpercentage and perimeterpercentage<1 :
-            predictedchar=c
-            predictedvalue=perimeterpercentage
         
         w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
@@ -159,14 +177,21 @@ for index, char in enumerate(chars) :
 
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
-        floathist = [int(i) for i in hist[:-1]]
-        #print len(set(hist)&set(hist[char])) / float(len(set(hist) | set(hist[char]))) * 100
-    if(predictedvalue>0.95) :
+        inthist = [int(i) for i in hist[:-1]]
+        histvalue = len(set(inthist)&set(charshist[index])) / float(len(set(inthist) | set(charshist[index])))
+
+        currentvalue = histvalue + perimeterpercentage
+        if predictedvalue<currentvalue/2 :
+            predictedchar=c
+            predictedvalue= currentvalue/2
+
+    if(predictedvalue>0.3) :
         predictedchars.append(predictedchar)
         predictedvalues.append(predictedvalue)
 
-#print predictedvalues
 
+
+#license regex
 license = ''.join(predictedchars)
 print license
 

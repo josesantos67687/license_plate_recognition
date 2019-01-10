@@ -69,6 +69,7 @@ kernel = np.ones((3,3),np.uint8)
 closing = cv2.morphologyEx(binarymat, cv2.MORPH_CLOSE, kernel)
 cv2.imshow("closing", closing)
 
+
 height, width = closing.shape[:2]
 print height
 print width
@@ -82,49 +83,46 @@ for c in range(width):
 
 #get chars and whites
 chars = []
-npwhites = []
-countwhites=0
 min=0
 max=0
 for a in histH:
     if a<4 and max>min:
         resized = cv2.resize(closing[0:height, min:max], (200, 400))
         chars.append(resized)
-        npwhites.append(countwhites)
-        countwhites=0
         min = max
     if a>4:
         max+=1
-        countwhites+=a
     elif a<4:
         min+=1
         max+=1
 
-
-#calculating skel of chars
-for char in chars :
-    size = np.size(binarymat)
-    skel = np.zeros(binarymat.shape,np.uint8)
+# #skeleton
+skelchars = []
+for normaletter in chars:
+    size = np.size(normaletter)
+    skel = np.zeros(normaletter.shape,np.uint8)
 
     element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
     done = False
 
     while( not done):
-        eroded = cv2.erode(binarymat,element)
+        eroded = cv2.erode(normaletter,element)
         temp = cv2.dilate(eroded,element)
-        temp = cv2.subtract(binarymat,temp)
+        temp = cv2.subtract(normaletter,temp)
         skel = cv2.bitwise_or(skel,temp)
-        binarymat = eroded.copy()
-        
-        zeros = size - cv2.countNonZero(binarymat)
+        normaletter = eroded.copy()
+     
+        zeros = size - cv2.countNonZero(normaletter)
         if zeros==size:
             done = True
+    skelchars.append(skel)
 
 
-#calculating hist of chars
+#calculating hist of skelchars
 charhist = []
 charshist=[]
-for char in chars :
+npwhites = []
+for char in skelchars :
     for c in range(200):
         conta=0
         for l in range(400):
@@ -132,35 +130,40 @@ for char in chars :
         charhist.append(conta)
     charshist.append(charhist)
     charhist = []
+    npwhites.append(cv2.countNonZero(char))
 
 
-#claculate perimeter of chars
+#claculate perimeter of skelchars
 perimeterchar = []
-for char in chars :
-    resized_image = cv2.resize(char, (200, 400))
+for char in skelchars :
     #calculating perimeter
     #ret,binaryimage = cv2.threshold(resized_image,50,255,cv2.THRESH_BINARY_INV)
-    edged = cv2.Canny(resized_image, 0,10)
+    edged = cv2.Canny(char, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
     image, contours, hierarchy = cv2.findContours(closed, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    
+
     perimeter=0
-    
+
     for c in contours:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
         cv2.drawContours(image, [approx], -1, (0, 255, 0), 2)
         perimeter = round(perimeter+cv2.arcLength(c,True),2)
     perimeterchar.append(perimeter)
+    print perimeterchar
+
+cv2.imshow("qualquer", chars[3])
+
+cv2.waitKey(0)
 
 
 #calculations to find license
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 predictedchars=[]
 predictedvalues=[]
-for index, char in enumerate(chars) :
+for index, char in enumerate(skelchars) :
     predictedchar=''
     predictedvalue=0
     for c in characters :
@@ -174,16 +177,21 @@ for index, char in enumerate(chars) :
         w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
         #print int(whites)/npwhites[index]
+        whites_percentage = 0
+        if int (whites)/int (npwhites[index]) <= 1 :
+            whites_percentage = int (whites)/npwhites[index]
+        else :
+            whites_percentage = npwhites[index]/int (whites)
 
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
         inthist = [int(i) for i in hist[:-1]]
         histvalue = len(set(inthist)&set(charshist[index])) / float(len(set(inthist) | set(charshist[index])))
 
-        currentvalue = histvalue + perimeterpercentage
-        if predictedvalue<currentvalue/2 :
+        currentvalue = histvalue + perimeterpercentage + whites_percentage
+        if predictedvalue<currentvalue/3 :
             predictedchar=c
-            predictedvalue= currentvalue/2
+            predictedvalue= currentvalue/3
 
     if(predictedvalue>0.3) :
         predictedchars.append(predictedchar)
@@ -207,12 +215,6 @@ else :
 
 
 cv2.waitKey(0)
-
-
-
-
-
-
 
 
 

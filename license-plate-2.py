@@ -49,7 +49,6 @@ for i in ret:
 
 # Drawing the selected contour on the original image
 cv2.drawContours(image, [posMatricula], -1, (255,255,255), 2)
-print posMatricula
 cv2.imshow("Imagem com matricula", image)
 
 
@@ -116,24 +115,27 @@ charP = []
 imgSkel = []
 
 for char in chars:
-    size = np.size(char)
-    skel = np.zeros(char.shape,np.uint8)
+    resized = cv2.resize(char, (200, 400))
+    size = np.size(resized)
+    skel = np.zeros(resized.shape,np.uint8)
 
     element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
     done = False
      
     while( not done):
-        eroded = cv2.erode(char,element)
+        eroded = cv2.erode(resized,element)
         temp = cv2.dilate(eroded,element)
-        temp = cv2.subtract(char,temp)
+        temp = cv2.subtract(resized,temp)
         skel = cv2.bitwise_or(skel,temp)
-        char = eroded.copy()
+        resized = eroded.copy()
      
-        zeros = size - cv2.countNonZero(char)
+        zeros = size - cv2.countNonZero(resized)
         if zeros==size:
             done = True
     
-    imgSkel.append(skel)
+    _, letraMat = cv2.threshold(skel, 10, 255, cv2.THRESH_BINARY)
+    imgSkel.append(letraMat)
+    
     for c in range(200):
         conta=0
         for l in range(400):
@@ -142,10 +144,10 @@ for char in chars:
     charH.append(charHs)
     charHs = []
 
-    charW.append(cv2.countNonZero(skel))
+    charW.append(cv2.countNonZero(letraMat))
 
     #calculating perimeter
-    edged = cv2.Canny(skel, 0,10)
+    edged = cv2.Canny(letraMat, 0,10)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
     closed = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
     #finding_contours
@@ -158,21 +160,14 @@ for char in chars:
         perimeter = round(perimeter+cv2.arcLength(c,True),2)
     charP.append(perimeter)
 
-cv2.imshow("0", imgSkel[0])
-cv2.imshow("1", imgSkel[1])
-cv2.imshow("2", imgSkel[2])
-cv2.imshow("3", imgSkel[3])
-cv2.imshow("4", imgSkel[4])
-cv2.imshow("5", imgSkel[5])
-cv2.imshow("6", imgSkel[6])
-cv2.imshow("7", imgSkel[7])
-
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 predictedchars=[]
 
 for index, i in enumerate(imgSkel):
     predictedchar=''
     predictedvalue=0
+    cv2.imshow("Letra Matricula", imgSkel[index])
+    cv2.waitKey(0)
     for c in characters:
         p = open('histcharacters/perimeter' + c + '.txt', "r")
         perimeter = p.read()
@@ -182,12 +177,6 @@ for index, i in enumerate(imgSkel):
             perimeterpercentage = charP[index]/float(perimeter)
 
 
-
-
-
-
-
-
         w = open('histcharacters/nwhites' + c + '.txt', "r")
         whites = w.read()
         if int (whites)/charW[index] <= 1 :
@@ -195,21 +184,10 @@ for index, i in enumerate(imgSkel):
         else :
             whites_percentage = charW[index]/int (whites)
 
-
-
-
-
-
-
-
-
         h = open('histcharacters/char' + c + '.txt', "r")
         hist = h.read().split(",");
         inthist = [int(i) for i in hist[:-1]]
         histvalue = len(set(inthist)&set(charH[index])) / float(len(set(inthist) | set(charH[index])))
-
-
-
 
         currentvalue = histvalue + perimeterpercentage + whites_percentage
         if predictedvalue<currentvalue/3 :
@@ -217,11 +195,8 @@ for index, i in enumerate(imgSkel):
             predictedvalue= currentvalue/3
 
 
-
-
-    #print predictedchar
-    #if(predictedvalue>0.1) :
-    predictedchars.append(predictedchar)
+    if(predictedvalue>0.3) :
+        predictedchars.append(predictedchar)
 
 
 
@@ -244,33 +219,3 @@ else :
 
 
 cv2.waitKey(0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
